@@ -1,0 +1,29 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - master  # Eğer ana dalın "main" ise "master" yerine "main" yaz.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Kodu Depodan Çek
+        uses: actions/checkout@v4
+
+      - name: 🚀 Sunucuya Bağlan ve Deploy Et
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 158.220.109.38  # Sunucunun IP adresini yaz
+          username: eren  # Sunucudaki kullanıcı adın
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/html
+            git pull origin master  # Eğer "main" branch kullanıyorsan master yerine main yaz
+            composer install --no-dev --prefer-dist  # PHP projesi ise gerekli bağımlılıkları yükler
+            npm install && npm run build  # Eğer Node.js projesi ise
+            php artisan migrate --force  # Laravel gibi frameworklerde database migration
+            sudo systemctl restart nginx  # Nginx restart ile yeni kodları aktifleştir
+            echo "🚀 Deployment Başarılı!"
